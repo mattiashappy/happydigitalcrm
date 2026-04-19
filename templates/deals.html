@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}Pipeline — CRM{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Pipeline</h1>
+  <button onclick="document.getElementById('new-deal-modal').classList.remove('hidden')"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+    + Add deal
+  </button>
+</div>
+
+<!-- Kanban board -->
+<div class="flex gap-4 overflow-x-auto pb-4">
+  {% set stage_colors = {
+    'new_lead': 'border-blue-200 bg-blue-50',
+    'meeting_booked': 'border-yellow-200 bg-yellow-50',
+    'proposal_sent': 'border-purple-200 bg-purple-50',
+    'won': 'border-green-200 bg-green-50',
+    'lost': 'border-red-200 bg-red-50'
+  } %}
+  {% set badge_colors = {
+    'new_lead': 'bg-blue-100 text-blue-700',
+    'meeting_booked': 'bg-yellow-100 text-yellow-700',
+    'proposal_sent': 'bg-purple-100 text-purple-700',
+    'won': 'bg-green-100 text-green-700',
+    'lost': 'bg-red-100 text-red-600'
+  } %}
+
+  {% for stage in STAGES %}
+  <div class="flex-shrink-0 w-64"
+       ondragover="event.preventDefault()"
+       ondrop="dropDeal(event, '{{ stage }}')">
+
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ STAGE_LABELS[stage] }}</span>
+      <span class="text-xs text-gray-400">{{ pipeline[stage] | length }}</span>
+    </div>
+
+    <div class="space-y-3 min-h-[200px]" id="col-{{ stage }}">
+      {% for deal in pipeline[stage] %}
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm cursor-grab active:cursor-grabbing"
+           draggable="true"
+           ondragstart="dragDeal(event, {{ deal.id }})"
+           id="deal-{{ deal.id }}">
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-sm font-medium text-gray-800 leading-snug">{{ deal.title }}</p>
+          <button onclick="deleteDeal({{ deal.id }}, this)"
+                  class="text-gray-300 hover:text-red-400 text-xs flex-shrink-0 mt-0.5" title="Delete">✕</button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1">{{ deal.contact.name }}</p>
+        {% if deal.value %}
+        <p class="text-sm font-semibold text-gray-700 mt-2">€{{ '{:,.0f}'.format(deal.value) }}</p>
+        {% endif %}
+        {% if deal.assigned_to %}
+        <p class="text-xs text-gray-400 mt-1">{{ deal.assigned_to.name.split()[0] }}</p>
+        {% endif %}
+
+        <!-- Move buttons (fallback for non-drag) -->
+        <div class="flex gap-1 mt-3 flex-wrap">
+          {% for s in STAGES %}
+          {% if s != stage %}
+          <button onclick="moveDeal({{ deal.id }}, '{{ s }}')"
+                  class="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition">
+            → {{ STAGE_LABELS[s] }}
+          </button>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- New deal modal -->
+<div id="new-deal-modal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">New deal</h2>
+      <button onclick="document.getElementById('new-deal-modal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('new_deal') }}" class="space-y-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-400">*</span></label>
+        <input type="text" name="title" required
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Contact <span class="text-red-400">*</span></label>
+        <select name="contact_id" required
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">Select contact…</option>
+          {% for contact in contacts %}
+          <option value="{{ contact.id }}">{{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+          <select name="stage"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {% for stage in STAGES %}
+            {% if stage not in ['won', 'lost'] %}
+            <option value="{{ stage }}">{{ STAGE_LABELS[stage] }}</option>
+            {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Value (€)</label>
+          <input type="number" name="value" step="0.01" placeholder="0"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Assign to</label>
+        <select name="assigned_to_id"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">Unassigned</option>
+          {% for user in users %}
+          <option value="{{ user.id }}">{{ user.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+        <textarea name="notes" rows="2"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition">
+          Add deal
+        </button>
+        <button type="button" onclick="document.getElementById('new-deal-modal').classList.add('hidden')"
+                class="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg border border-gray-200 transition">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let draggedId = null;
+
+  function dragDeal(event, id) {
+    draggedId = id;
+    event.dataTransfer.effectAllowed = 'move';
+  }
+
+  function dropDeal(event, stage) {
+    event.preventDefault();
+    if (draggedId) moveDeal(draggedId, stage);
+  }
+
+  function moveDeal(id, stage) {
+    fetch(`/deals/${id}/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage }),
+    }).then(() => location.reload());
+  }
+
+  function deleteDeal(id, btn) {
+    if (!confirm('Delete this deal?')) return;
+    fetch(`/deals/${id}/delete`, { method: 'POST' })
+      .then(() => document.getElementById(`deal-${id}`).remove());
+  }
+</script>
+
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}{{ contact.name }} — CRM{% endblock %}
+{% block content %}
+
+<div class="flex items-center gap-3 mb-6">
+  <a href="{{ url_for('contacts') }}" class="text-sm text-gray-400 hover:text-gray-700">← Contacts</a>
+  <span class="text-gray-300">/</span>
+  <h1 class="text-xl font-bold">{{ contact.name }}</h1>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+  <!-- Left: contact info -->
+  <div class="space-y-4">
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Info</h2>
+        <a href="{{ url_for('edit_contact', contact_id=contact.id) }}"
+           class="text-xs text-indigo-500 hover:underline">Edit</a>
+      </div>
+      <dl class="space-y-3 text-sm">
+        {% if contact.company %}
+        <div>
+          <dt class="text-gray-400 text-xs">Company</dt>
+          <dd class="text-gray-800 font-medium">{{ contact.company }}</dd>
+        </div>
+        {% endif %}
+        {% if contact.email %}
+        <div>
+          <dt class="text-gray-400 text-xs">Email</dt>
+          <dd><a href="mailto:{{ contact.email }}" class="text-indigo-600 hover:underline">{{ contact.email }}</a></dd>
+        </div>
+        {% endif %}
+        {% if contact.phone %}
+        <div>
+          <dt class="text-gray-400 text-xs">Phone</dt>
+          <dd class="text-gray-800">{{ contact.phone }}</dd>
+        </div>
+        {% endif %}
+        <div>
+          <dt class="text-gray-400 text-xs">Added</dt>
+          <dd class="text-gray-800">{{ contact.created_at.strftime('%d %b %Y') }}</dd>
+        </div>
+        {% if contact.notes %}
+        <div>
+          <dt class="text-gray-400 text-xs mb-1">Notes</dt>
+          <dd class="text-gray-700 whitespace-pre-line">{{ contact.notes }}</dd>
+        </div>
+        {% endif %}
+      </dl>
+    </div>
+
+    <!-- Delete -->
+    <form method="POST" action="{{ url_for('delete_contact', contact_id=contact.id) }}"
+          onsubmit="return confirm('Delete {{ contact.name }}? This cannot be undone.')">
+      <button type="submit" class="text-xs text-red-400 hover:text-red-600">Delete contact</button>
+    </form>
+  </div>
+
+  <!-- Right: deals + notes -->
+  <div class="md:col-span-2 space-y-6">
+
+    <!-- Deals -->
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide">Deals</h2>
+      </div>
+      {% if contact.deals %}
+      <ul class="space-y-2">
+        {% for deal in contact.deals %}
+        <li class="flex items-center justify-between text-sm py-2 border-b border-gray-100 last:border-0">
+          <div>
+            <span class="font-medium text-gray-800">{{ deal.title }}</span>
+            {% if deal.value %}
+            <span class="ml-2 text-gray-400">€{{ '{:,.0f}'.format(deal.value) }}</span>
+            {% endif %}
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium
+            {% if deal.stage == 'won' %}bg-green-100 text-green-700
+            {% elif deal.stage == 'lost' %}bg-red-100 text-red-600
+            {% else %}bg-indigo-50 text-indigo-600{% endif %}">
+            {{ STAGE_LABELS[deal.stage] }}
+          </span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-gray-400">No deals yet.</p>
+      {% endif %}
+
+      <!-- Add deal inline -->
+      <details class="mt-4">
+        <summary class="text-xs text-indigo-500 cursor-pointer hover:underline">+ Add deal</summary>
+        <form method="POST" action="{{ url_for('new_deal') }}" class="mt-3 space-y-2">
+          <input type="hidden" name="contact_id" value="{{ contact.id }}" />
+          <input type="text" name="title" placeholder="Deal title" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <div class="flex gap-2">
+            <input type="number" name="value" placeholder="Value (€)" step="0.01"
+                   class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <select name="stage"
+                    class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              {% for stage in STAGES %}
+              {% if stage not in ['won', 'lost'] %}
+              <option value="{{ stage }}">{{ STAGE_LABELS[stage] }}</option>
+              {% endif %}
+              {% endfor %}
+            </select>
+          </div>
+          <select name="assigned_to_id"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Unassigned</option>
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit"
+                  class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition">
+            Add deal
+          </button>
+        </form>
+      </details>
+    </div>
+
+    <!-- Notes timeline -->
+    <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+      <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Notes</h2>
+
+      <form method="POST" action="{{ url_for('add_note', contact_id=contact.id) }}" class="mb-5">
+        <textarea name="content" rows="2" placeholder="Add a note…" required
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"></textarea>
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-lg transition">
+          Save note
+        </button>
+      </form>
+
+      {% if contact.note_entries %}
+      <ul class="space-y-3">
+        {% for note in contact.note_entries | sort(attribute='created_at', reverse=True) %}
+        <li class="text-sm border-l-2 border-indigo-100 pl-3">
+          <p class="text-gray-800 whitespace-pre-line">{{ note.content }}</p>
+          <p class="text-xs text-gray-400 mt-1">
+            {{ note.created_by.name.split()[0] }} · {{ note.created_at.strftime('%d %b %Y, %H:%M') }}
+          </p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-gray-400">No notes yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}

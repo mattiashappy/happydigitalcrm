@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — CRM{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-8">
+  <h1 class="text-2xl font-bold">Dashboard</h1>
+  <span class="text-sm text-gray-400">{{ today.strftime('%A, %d %B %Y') }}</span>
+</div>
+
+<!-- Stat cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Contacts</p>
+    <p class="text-3xl font-bold text-gray-900">{{ total_contacts }}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Active Deals</p>
+    <p class="text-3xl font-bold text-gray-900">{{ active_deals }}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Pipeline Value</p>
+    <p class="text-3xl font-bold text-gray-900">
+      {% if pipeline_value >= 1000 %}
+        €{{ '{:,.0f}'.format(pipeline_value) }}
+      {% else %}
+        €{{ pipeline_value | int }}
+      {% endif %}
+    </p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Won Deals</p>
+    <p class="text-3xl font-bold text-green-600">{{ won_deals }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  <!-- Overdue tasks -->
+  {% if overdue_tasks %}
+  <div class="bg-red-50 border border-red-200 rounded-xl p-5">
+    <h2 class="text-sm font-semibold text-red-700 uppercase tracking-wide mb-3">Overdue ({{ overdue_tasks|length }})</h2>
+    <ul class="space-y-2">
+      {% for task in overdue_tasks %}
+      <li class="flex items-center justify-between">
+        <span class="text-sm text-red-800">{{ task.title }}</span>
+        <span class="text-xs text-red-500">{{ task.due_date.strftime('%d %b') }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('tasks') }}" class="mt-3 inline-block text-xs text-red-600 hover:underline">View all tasks →</a>
+  </div>
+  {% endif %}
+
+  <!-- Upcoming tasks -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Upcoming Tasks</h2>
+    {% if upcoming_tasks %}
+    <ul class="space-y-2">
+      {% for task in upcoming_tasks %}
+      <li class="flex items-center justify-between">
+        <div>
+          <span class="text-sm text-gray-800">{{ task.title }}</span>
+          {% if task.assigned_to %}
+          <span class="ml-2 text-xs text-gray-400">{{ task.assigned_to.name.split()[0] }}</span>
+          {% endif %}
+        </div>
+        <span class="text-xs text-gray-400">{{ task.due_date.strftime('%d %b') if task.due_date else '—' }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{{ url_for('tasks') }}" class="mt-3 inline-block text-xs text-indigo-500 hover:underline">View all →</a>
+    {% else %}
+    <p class="text-sm text-gray-400">No upcoming tasks.</p>
+    <a href="{{ url_for('tasks') }}" class="mt-3 inline-block text-xs text-indigo-500 hover:underline">Add a task →</a>
+    {% endif %}
+  </div>
+
+  <!-- Quick links -->
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Quick Actions</h2>
+    <div class="space-y-2">
+      <a href="{{ url_for('new_contact') }}"
+         class="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800">
+        <span class="text-lg">+</span> Add contact
+      </a>
+      <a href="{{ url_for('deals') }}"
+         class="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800">
+        <span class="text-lg">⟶</span> Open pipeline
+      </a>
+      <a href="{{ url_for('tasks') }}"
+         class="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800">
+        <span class="text-lg">✓</span> View tasks
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

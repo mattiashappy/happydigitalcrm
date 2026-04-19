@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(heroku addons:create heroku-postgresql:essential-0 --app happydigital)",
+      "Bash(heroku addons *)",
+      "Bash(heroku config *)",
+      "Bash(heroku login *)"
+    ]
+  }
+}

@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Tasks — CRM{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">Tasks</h1>
+  <button onclick="document.getElementById('new-task-modal').classList.remove('hidden')"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+    + Add task
+  </button>
+</div>
+
+<!-- Filter tabs -->
+<div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-lg w-fit">
+  {% for f, label in [('open', 'All open'), ('mine', 'Mine'), ('done', 'Done')] %}
+  <a href="{{ url_for('tasks', filter=f) }}"
+     class="text-sm px-4 py-1.5 rounded-md transition
+       {% if filter_by == f %}bg-white shadow-sm font-medium text-gray-900{% else %}text-gray-500 hover:text-gray-700{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if tasks %}
+<div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+  <ul class="divide-y divide-gray-100">
+    {% for task in tasks %}
+    {% set overdue = task.due_date and task.due_date < today and not task.completed %}
+    <li class="flex items-start gap-4 px-5 py-4 hover:bg-gray-50 transition" id="task-row-{{ task.id }}">
+
+      <!-- Checkbox -->
+      <button onclick="toggleTask({{ task.id }}, this)" class="mt-0.5 flex-shrink-0">
+        <span class="w-5 h-5 flex items-center justify-center rounded-full border-2
+          {% if task.completed %}border-green-400 bg-green-400 text-white{% else %}border-gray-300 hover:border-indigo-400{% endif %}
+          transition text-xs">
+          {% if task.completed %}✓{% endif %}
+        </span>
+      </button>
+
+      <!-- Content -->
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium {% if task.completed %}line-through text-gray-400{% else %}text-gray-800{% endif %}">
+          {{ task.title }}
+        </p>
+        {% if task.description %}
+        <p class="text-xs text-gray-400 mt-0.5">{{ task.description }}</p>
+        {% endif %}
+        <div class="flex items-center gap-3 mt-1 flex-wrap">
+          {% if task.due_date %}
+          <span class="text-xs {% if overdue %}text-red-500 font-medium{% else %}text-gray-400{% endif %}">
+            {% if overdue %}Overdue · {% endif %}{{ task.due_date.strftime('%d %b %Y') }}
+          </span>
+          {% endif %}
+          {% if task.assigned_to %}
+          <span class="text-xs text-gray-400">{{ task.assigned_to.name.split()[0] }}</span>
+          {% endif %}
+          {% if task.contact %}
+          <a href="{{ url_for('contact_detail', contact_id=task.contact.id) }}"
+             class="text-xs text-indigo-400 hover:underline">{{ task.contact.name }}</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Delete -->
+      <button onclick="deleteTask({{ task.id }})" class="text-gray-300 hover:text-red-400 text-sm mt-0.5 flex-shrink-0" title="Delete">✕</button>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div class="text-center py-20 text-gray-400">
+  <p class="text-lg mb-2">No tasks here.</p>
+  <button onclick="document.getElementById('new-task-modal').classList.remove('hidden')"
+          class="text-indigo-500 hover:underline text-sm">Add your first task →</button>
+</div>
+{% endif %}
+
+<!-- New task modal -->
+<div id="new-task-modal" class="hidden fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">New task</h2>
+      <button onclick="document.getElementById('new-task-modal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('new_task') }}" class="space-y-3">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Task <span class="text-red-400">*</span></label>
+        <input type="text" name="title" required autofocus
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <textarea name="description" rows="2"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+      </div>
+      <div class="flex gap-3">
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Due date</label>
+          <input type="date" name="due_date"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Assign to</label>
+          <select name="assigned_to_id"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.name.split()[0] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Linked contact</label>
+        <select name="contact_id"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <option value="">None</option>
+          {% for contact in contacts %}
+          <option value="{{ contact.id }}">{{ contact.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex gap-3 pt-1">
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition">
+          Add task
+        </button>
+        <button type="button" onclick="document.getElementById('new-task-modal').classList.add('hidden')"
+                class="text-sm text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg border border-gray-200 transition">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  function toggleTask(id, btn) {
+    fetch(`/tasks/${id}/complete`, { method: 'POST' })
+      .then(r => r.json())
+      .then(() => location.reload());
+  }
+
+  function deleteTask(id) {
+    if (!confirm('Delete this task?')) return;
+    fetch(`/tasks/${id}/delete`, { method: 'POST' })
+      .then(() => document.getElementById(`task-row-${id}`).remove());
+  }
+</script>
+
+{% endblock %}

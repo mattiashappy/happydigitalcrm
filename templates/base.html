@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}CRM{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 text-gray-900 antialiased">
+
+{% if current_user.is_authenticated %}
+<nav class="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-6">
+  <a href="{{ url_for('dashboard') }}" class="font-bold text-indigo-600 text-lg tracking-tight">CRM</a>
+  <div class="flex items-center gap-5 ml-4">
+    <a href="{{ url_for('dashboard') }}"
+       class="text-sm {% if request.endpoint == 'dashboard' %}text-indigo-600 font-medium{% else %}text-gray-500 hover:text-gray-800{% endif %}">
+      Dashboard
+    </a>
+    <a href="{{ url_for('contacts') }}"
+       class="text-sm {% if 'contact' in (request.endpoint or '') %}text-indigo-600 font-medium{% else %}text-gray-500 hover:text-gray-800{% endif %}">
+      Contacts
+    </a>
+    <a href="{{ url_for('deals') }}"
+       class="text-sm {% if 'deal' in (request.endpoint or '') %}text-indigo-600 font-medium{% else %}text-gray-500 hover:text-gray-800{% endif %}">
+      Pipeline
+    </a>
+    <a href="{{ url_for('tasks') }}"
+       class="text-sm {% if 'task' in (request.endpoint or '') %}text-indigo-600 font-medium{% else %}text-gray-500 hover:text-gray-800{% endif %}">
+      Tasks
+    </a>
+  </div>
+  <div class="ml-auto flex items-center gap-4">
+    <span class="text-sm text-gray-400">{{ current_user.name.split()[0] }}</span>
+    <a href="{{ url_for('logout') }}" class="text-sm text-gray-400 hover:text-gray-700">Log out</a>
+  </div>
+</nav>
+{% endif %}
+
+<main class="max-w-7xl mx-auto px-6 py-8">
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for msg in messages %}
+      <div class="mb-4 bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-2 rounded-lg">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

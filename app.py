@@ -314,11 +314,13 @@ def delete_task(task_id):
     return jsonify({'ok': True})
 
 
+with app.app_context():
+    db.create_all()
+    seed_users()
+
+from scheduler import start_scheduler
+start_scheduler(app)
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        seed_users()
-    from scheduler import start_scheduler
-    start_scheduler(app)
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

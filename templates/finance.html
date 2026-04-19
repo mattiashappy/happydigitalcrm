@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Finance — CRM{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-8">
+  <h1 class="text-2xl font-bold">Finance</h1>
+  <span class="text-sm text-gray-400">Monthly overview</span>
+</div>
+
+<!-- Top P&L summary -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Monthly Revenue</p>
+    <p class="text-3xl font-bold text-gray-900">€{{ '{:,.0f}'.format(mrr) }}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Monthly Costs</p>
+    <p class="text-3xl font-bold text-red-500">€{{ '{:,.0f}'.format(total_costs) }}</p>
+  </div>
+  <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+    <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Net / Month</p>
+    <p class="text-3xl font-bold {% if net >= 0 %}text-green-600{% else %}text-red-500{% endif %}">
+      {% if net >= 0 %}+{% endif %}€{{ '{:,.0f}'.format(net) }}
+    </p>
+  </div>
+  <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
+    <p class="text-xs text-indigo-400 uppercase tracking-wide mb-1">Pipeline Upside</p>
+    <p class="text-3xl font-bold text-indigo-600">+€{{ '{:,.0f}'.format(pipeline_mrr) }}</p>
+    <p class="text-xs text-indigo-400 mt-1">if all deals close</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  <!-- Revenue: clients with fees -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h2 class="text-sm font-semibold text-gray-700">Client Revenue</h2>
+      <span class="text-xs text-gray-400">{{ clients_with_fee | length }} billing</span>
+    </div>
+
+    {% if clients_with_fee %}
+    <ul class="divide-y divide-gray-50">
+      {% for client in clients_with_fee %}
+      <li class="flex items-center justify-between px-5 py-3">
+        <span class="text-sm text-gray-800">{{ client.name }}</span>
+        <div class="flex items-center gap-3">
+          <span class="text-sm font-semibold text-gray-700">€{{ '{:,.0f}'.format(client.monthly_fee) }}/mo</span>
+          <form method="POST" action="{{ url_for('update_fee', contact_id=client.id) }}" class="flex items-center gap-1">
+            <input type="number" name="monthly_fee" value="{{ client.monthly_fee | int }}" step="1"
+                   class="w-24 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <button type="submit" class="text-xs text-indigo-500 hover:text-indigo-700">Save</button>
+          </form>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-gray-400 px-5 py-4">No clients with monthly fees set yet.</p>
+    {% endif %}
+
+    <!-- Clients missing fees -->
+    {% if clients_no_fee %}
+    <div class="border-t border-gray-100 px-5 py-4">
+      <p class="text-xs text-gray-400 uppercase tracking-wide mb-3">No fee set yet</p>
+      <ul class="space-y-2">
+        {% for client in clients_no_fee %}
+        <li class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">{{ client.name }}</span>
+          <form method="POST" action="{{ url_for('update_fee', contact_id=client.id) }}" class="flex items-center gap-1">
+            <input type="number" name="monthly_fee" placeholder="€/mo" step="1"
+                   class="w-24 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <button type="submit" class="text-xs text-indigo-500 hover:text-indigo-700">Set</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Costs -->
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h2 class="text-sm font-semibold text-gray-700">Monthly Costs</h2>
+      <span class="text-xs text-gray-400">€{{ '{:,.0f}'.format(total_costs) }} total</span>
+    </div>
+
+    {% if costs_by_category %}
+      {% for category, items in costs_by_category.items() %}
+      <div class="border-b border-gray-50 last:border-0">
+        <p class="text-xs text-gray-400 uppercase tracking-wide px-5 pt-3 pb-1">{{ category }}</p>
+        {% for cost in items %}
+        <div class="flex items-center justify-between px-5 py-2" id="cost-row-{{ cost.id }}">
+          <div>
+            <span class="text-sm text-gray-800">{{ cost.name }}</span>
+            {% if cost.notes %}<span class="ml-2 text-xs text-gray-400">{{ cost.notes }}</span>{% endif %}
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-sm font-semibold text-red-500">€{{ '{:,.0f}'.format(cost.amount) }}/mo</span>
+            <button onclick="deleteCost({{ cost.id }})" class="text-gray-300 hover:text-red-400 text-xs">✕</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    {% else %}
+    <p class="text-sm text-gray-400 px-5 py-4">No costs added yet.</p>
+    {% endif %}
+
+    <!-- Add cost form -->
+    <div class="border-t border-gray-100 px-5 py-4">
+      <p class="text-xs text-gray-400 uppercase tracking-wide mb-3">Add cost</p>
+      <form method="POST" action="{{ url_for('new_cost') }}" class="space-y-2">
+        <div class="flex gap-2">
+          <input type="text" name="name" placeholder="Name (e.g. Slack)" required
+                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <input type="number" name="amount" placeholder="€/mo" step="1" required
+                 class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div class="flex gap-2">
+          <select name="category"
+                  class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {% for cat in COST_CATEGORIES %}
+            <option>{{ cat }}</option>
+            {% endfor %}
+          </select>
+          <input type="text" name="notes" placeholder="Note (optional)"
+                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <button type="submit"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
+          Add cost
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pipeline deals -->
+  {% if active_deals %}
+  <div class="md:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <h2 class="text-sm font-semibold text-gray-700">Active Deals — Pipeline</h2>
+      <span class="text-xs text-gray-400">+€{{ '{:,.0f}'.format(pipeline_mrr) }}/mo if all close</span>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="text-left px-5 py-2 text-xs font-semibold text-gray-400">Deal</th>
+          <th class="text-left px-5 py-2 text-xs font-semibold text-gray-400">Client</th>
+          <th class="text-left px-5 py-2 text-xs font-semibold text-gray-400">Stage</th>
+          <th class="text-right px-5 py-2 text-xs font-semibold text-gray-400">Monthly Value</th>
+          <th class="text-right px-5 py-2 text-xs font-semibold text-gray-400">Revenue if Won</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for deal in active_deals %}
+        <tr>
+          <td class="px-5 py-3 font-medium text-gray-800">{{ deal.title }}</td>
+          <td class="px-5 py-3 text-gray-500">{{ deal.contact.name }}</td>
+          <td class="px-5 py-3">
+            <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">
+              {{ STAGE_LABELS[deal.stage] }}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-right font-semibold text-gray-700">
+            {% if deal.value %}€{{ '{:,.0f}'.format(deal.value) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+          </td>
+          <td class="px-5 py-3 text-right font-semibold text-green-600">
+            {% if deal.value %}€{{ '{:,.0f}'.format(mrr + deal.value) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+  function deleteCost(id) {
+    if (!confirm('Delete this cost?')) return;
+    fetch(`/finance/costs/${id}/delete`, { method: 'POST' })
+      .then(() => document.getElementById(`cost-row-${id}`).remove());
+  }
+</script>
+
+{% endblock %}

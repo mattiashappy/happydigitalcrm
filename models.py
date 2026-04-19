@@ -28,6 +28,7 @@ class Contact(db.Model):
     phone = db.Column(db.String(30))
     company = db.Column(db.String(100))
     notes = db.Column(db.Text)
+    monthly_fee = db.Column(db.Float)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     deals = db.relationship('Deal', backref='contact', lazy=True, cascade='all, delete-orphan')
@@ -69,4 +70,16 @@ class Note(db.Model):
     deal_id = db.Column(db.Integer, db.ForeignKey('deal.id'))
     created_by_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_by = db.relationship('User')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+COST_CATEGORIES = ['Salary', 'Software', 'Office', 'Marketing', 'Other']
+
+
+class Cost(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(50), default='Other')
+    notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

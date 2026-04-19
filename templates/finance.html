@@ -11,21 +11,21 @@
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
   <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
     <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Monthly Revenue</p>
-    <p class="text-3xl font-bold text-gray-900">€{{ '{:,.0f}'.format(mrr) }}</p>
+    <p class="text-3xl font-bold text-gray-900">kr {{ '{:,.0f}'.format(mrr) }}</p>
   </div>
   <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
     <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Monthly Costs</p>
-    <p class="text-3xl font-bold text-red-500">€{{ '{:,.0f}'.format(total_costs) }}</p>
+    <p class="text-3xl font-bold text-red-500">kr {{ '{:,.0f}'.format(total_costs) }}</p>
   </div>
   <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
     <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Net / Month</p>
     <p class="text-3xl font-bold {% if net >= 0 %}text-green-600{% else %}text-red-500{% endif %}">
-      {% if net >= 0 %}+{% endif %}€{{ '{:,.0f}'.format(net) }}
+      {% if net >= 0 %}+{% endif %}kr {{ '{:,.0f}'.format(net) }}
     </p>
   </div>
   <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-5">
     <p class="text-xs text-indigo-400 uppercase tracking-wide mb-1">Pipeline Upside</p>
-    <p class="text-3xl font-bold text-indigo-600">+€{{ '{:,.0f}'.format(pipeline_mrr) }}</p>
+    <p class="text-3xl font-bold text-indigo-600">+kr {{ '{:,.0f}'.format(pipeline_mrr) }}</p>
     <p class="text-xs text-indigo-400 mt-1">if all deals close</p>
   </div>
 </div>
@@ -45,7 +45,7 @@
       <li class="flex items-center justify-between px-5 py-3">
         <span class="text-sm text-gray-800">{{ client.name }}</span>
         <div class="flex items-center gap-3">
-          <span class="text-sm font-semibold text-gray-700">€{{ '{:,.0f}'.format(client.monthly_fee) }}/mo</span>
+          <span class="text-sm font-semibold text-gray-700">kr {{ '{:,.0f}'.format(client.monthly_fee) }}/mo</span>
           <form method="POST" action="{{ url_for('update_fee', contact_id=client.id) }}" class="flex items-center gap-1">
             <input type="number" name="monthly_fee" value="{{ client.monthly_fee | int }}" step="1"
                    class="w-24 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
@@ -68,7 +68,7 @@
         <li class="flex items-center justify-between">
           <span class="text-sm text-gray-500">{{ client.name }}</span>
           <form method="POST" action="{{ url_for('update_fee', contact_id=client.id) }}" class="flex items-center gap-1">
-            <input type="number" name="monthly_fee" placeholder="€/mo" step="1"
+            <input type="number" name="monthly_fee" placeholder="kr/mo" step="1"
                    class="w-24 border border-gray-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400" />
             <button type="submit" class="text-xs text-indigo-500 hover:text-indigo-700">Set</button>
           </form>
@@ -83,7 +83,7 @@
   <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
       <h2 class="text-sm font-semibold text-gray-700">Monthly Costs</h2>
-      <span class="text-xs text-gray-400">€{{ '{:,.0f}'.format(total_costs) }} total</span>
+      <span class="text-xs text-gray-400">kr {{ '{:,.0f}'.format(total_costs) }} total</span>
     </div>
 
     {% if costs_by_category %}
@@ -97,7 +97,7 @@
             {% if cost.notes %}<span class="ml-2 text-xs text-gray-400">{{ cost.notes }}</span>{% endif %}
           </div>
           <div class="flex items-center gap-3">
-            <span class="text-sm font-semibold text-red-500">€{{ '{:,.0f}'.format(cost.amount) }}/mo</span>
+            <span class="text-sm font-semibold text-red-500">kr {{ '{:,.0f}'.format(cost.amount) }}/mo</span>
             <button onclick="deleteCost({{ cost.id }})" class="text-gray-300 hover:text-red-400 text-xs">✕</button>
           </div>
         </div>
@@ -115,7 +115,7 @@
         <div class="flex gap-2">
           <input type="text" name="name" placeholder="Name (e.g. Slack)" required
                  class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          <input type="number" name="amount" placeholder="€/mo" step="1" required
+          <input type="number" name="amount" placeholder="kr/mo" step="1" required
                  class="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
         <div class="flex gap-2">
@@ -141,7 +141,7 @@
   <div class="md:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
     <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
       <h2 class="text-sm font-semibold text-gray-700">Active Deals — Pipeline</h2>
-      <span class="text-xs text-gray-400">+€{{ '{:,.0f}'.format(pipeline_mrr) }}/mo if all close</span>
+      <span class="text-xs text-gray-400">+kr {{ '{:,.0f}'.format(pipeline_mrr) }}/mo if all close</span>
     </div>
     <table class="w-full text-sm">
       <thead class="bg-gray-50">
@@ -164,10 +164,10 @@
             </span>
           </td>
           <td class="px-5 py-3 text-right font-semibold text-gray-700">
-            {% if deal.value %}€{{ '{:,.0f}'.format(deal.value) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+            {% if deal.value %}kr {{ '{:,.0f}'.format(deal.value) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
           </td>
           <td class="px-5 py-3 text-right font-semibold text-green-600">
-            {% if deal.value %}€{{ '{:,.0f}'.format(mrr + deal.value) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+            {% if deal.value %}kr {{ '{:,.0f}'.format(mrr + deal.value) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
           </td>
         </tr>
         {% endfor %}

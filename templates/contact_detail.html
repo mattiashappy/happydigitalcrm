@@ -72,7 +72,7 @@
           <div>
             <span class="font-medium text-gray-800">{{ deal.title }}</span>
             {% if deal.value %}
-            <span class="ml-2 text-gray-400">€{{ '{:,.0f}'.format(deal.value) }}</span>
+            <span class="ml-2 text-gray-400">kr {{ '{:,.0f}'.format(deal.value) }}</span>
             {% endif %}
           </div>
           <span class="text-xs px-2 py-0.5 rounded-full font-medium
@@ -96,7 +96,7 @@
           <input type="text" name="title" placeholder="Deal title" required
                  class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           <div class="flex gap-2">
-            <input type="number" name="value" placeholder="Value (€)" step="0.01"
+            <input type="number" name="value" placeholder="Value (kr)" step="0.01"
                    class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             <select name="stage"
                     class="w-1/2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">

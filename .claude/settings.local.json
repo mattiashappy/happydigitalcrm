@@ -4,7 +4,10 @@
       "Bash(heroku addons:create heroku-postgresql:essential-0 --app happydigital)",
       "Bash(heroku addons *)",
       "Bash(heroku config *)",
-      "Bash(heroku login *)"
+      "Bash(heroku login *)",
+      "Bash(sed -i 's/€/kr /g' contact_detail.html contact_form.html dashboard.html deals.html finance.html)",
+      "Bash(sed -i 's/Monthly Fee \\(kr \\)/Monthly Fee \\(kr\\)/g' contact_form.html)",
+      "Bash(sed -i 's/placeholder=\"kr \\\\/mo\"/placeholder=\"kr\\\\/mo\"/g' finance.html)"
     ]
   }
 }
